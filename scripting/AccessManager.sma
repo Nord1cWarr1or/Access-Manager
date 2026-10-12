@@ -146,6 +146,7 @@ public plugin_init() {
 // fresh bans
 public fbans_sql_connected(Handle:hSqlTuple) {
 	g_hSqlTuple = hSqlTuple
+	SQL_SetCharset(g_hSqlTuple, "utf8")
 
 	new szIP[MAX_IP_LENGTH], szPort[6]
 	get_cvar_string("fb_server_ip", szIP, chx(szIP))
@@ -158,6 +159,7 @@ public fbans_sql_connected(Handle:hSqlTuple) {
 // lite bans
 public lite_bans_sql_init(Handle:hSqlTuple) {
 	g_hSqlTuple = hSqlTuple
+	SQL_SetCharset(g_hSqlTuple, "utf8")
 
 	get_cvar_string("lb_server_ip", g_szServerAddress, chx(g_szServerAddress))
 }
@@ -174,6 +176,8 @@ public task_InitSystem() {
 
 	if(!g_hSqlTuple) {
 		func_CreateTuple()
+	} else {
+		SQL_SetCharset(g_hSqlTuple, "utf8")
 	}
 
 	set_pcvar_string(g_pCvar[PCVAR__PASSWORD], "*** PROTECTED ***")
