@@ -25,6 +25,20 @@ native adminload_get_expired(pPlayer);
 
 native AccessManager_ReAuthPlayer(pPlayer);
 
+// Returns the stored account nickname (identification field from DB / am_users.ini)
+// of the account the player is currently authorized with.
+// szBuffer - buffer to store the nickname
+// iMaxLen  - maximum buffer length (charsmax)
+// Returns number of copied chars, 0 if player is not connected or has no matched account
+native AccessManager_GetNickName(pPlayer, szBuffer[], iMaxLen);
+
+// Returns the stored account nickname by authid (steamid / ip / name, as stored in the account).
+// szAuthID - authid to look up
+// szBuffer - buffer to store the nickname
+// iMaxLen  - maximum buffer length (charsmax)
+// Returns number of copied chars, 0 if no account with that authid (or empty nickname)
+native AccessManager_GetNickNameByAuthID(const szAuthID[], szBuffer[], iMaxLen);
+
 // To use this native, first see 'ADD_ACCESS_FEATURE' define in AccessManager.sma
 // pPlayer - player index (pass 0 if player is not connected)
 // szAuthID - player authid

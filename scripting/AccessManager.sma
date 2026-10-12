@@ -1,10 +1,12 @@
 /* Changelog:
 	1.0.0 (03.03.2021):
 		* First release
+	1.1.0 (12.10.2026):
+		* Added AccessManager_GetNickName() / AccessManager_GetNickNameByAuthID() natives
 */
 
 // Some mechanics was taken from 'Admin Loader' by Neygomon
-new const PLUGIN_VERSION[] = "1.0.0"
+new const PLUGIN_VERSION[] = "1.1.0"
 
 #include <amxmodx>
 #include <amxmisc>
@@ -84,6 +86,7 @@ new g_fwdClientAdmin
 new g_fwdAdminAccess
 stock g_fwdAccessAdded
 new g_iExpireTimeStamp[MAX_PLAYERS + 1]
+new g_szAccountNick[MAX_PLAYERS + 1][MAX_ACCOUNT_NAME_LENGTH]
 new g_eSqlData[SQL_DATA_STRUCT]
 new g_eUserData[ACCOUNT_DATA_STRUCT]
 new bool:g_bPluginEnded
@@ -615,6 +618,7 @@ func_AuthAllPlayers() {
 
 func_AuthPlayer(pPlayer) {
 	g_iExpireTimeStamp[pPlayer] = -1
+	g_szAccountNick[pPlayer][0] = 0
 
 	remove_user_flags(pPlayer)
 
@@ -726,6 +730,11 @@ func_AuthPlayer(pPlayer) {
 
 		iAuthCount++
 		bitAccessFlags |= iBitFlags
+
+		if(!g_szAccountNick[pPlayer][0]) {
+			copy( g_szAccountNick[pPlayer], chx(g_szAccountNick[]),
+				g_eUserData[ACCOUNT_DATA__NAME] );
+		}
 	}
 
 	/* --- */
@@ -867,6 +876,8 @@ public plugin_natives() {
 	register_native("amxbans_get_expired", "admin_expired_callback") // support AmxBans RBS by SKAJIbnEJIb
 	register_native("adminload_get_expired", "admin_expired_callback") // support Admin Load by Fant0M
 	register_native("AccessManager_ReAuthPlayer", "_AccessManager_ReAuthPlayer")
+	register_native("AccessManager_GetNickName", "native_get_nickname")
+	register_native("AccessManager_GetNickNameByAuthID", "native_get_nickname_by_authid")
 #if defined ADD_ACCESS_FEATURE
 	register_native("AccessManager_AddAccess", "_AccessManager_AddAccess")
 #endif
@@ -891,6 +902,71 @@ public _AccessManager_ReAuthPlayer(iPluginID, iParamCount) {
 
 	func_AuthPlayer(pPlayer)
 	return 1
+}
+
+/* -------------------- */
+
+public native_get_nickname(const iPluginID, const iParamCount) {
+	enum {
+		arg_player = 1,
+		arg_buffer,
+		arg_maxlen
+	};
+
+	if(iParamCount != 3) {
+		log_error(AMX_ERR_PARAMS, "Expected 3 arguments, got %d", iParamCount);
+		return 0;
+	}
+
+	new pPlayer = get_param(arg_player);
+
+	if(pPlayer < 1 || pPlayer > MaxClients || !is_user_connected(pPlayer)) {
+		return 0;
+	}
+
+	if(!g_szAccountNick[pPlayer][0]) {
+		return 0;
+	}
+
+	return set_string(arg_buffer, g_szAccountNick[pPlayer], get_param(arg_maxlen));
+}
+
+/* -------------------- */
+
+public native_get_nickname_by_authid(const iPluginID, const iParamCount) {
+	enum {
+		arg_authid = 1,
+		arg_buffer,
+		arg_maxlen
+	};
+
+	if(iParamCount != 3) {
+		log_error(AMX_ERR_PARAMS, "Expected 3 arguments, got %d", iParamCount);
+		return 0;
+	}
+
+	static szAuthID[MAX_AUTHID_LENGTH];
+	get_string(arg_authid, szAuthID, charsmax(szAuthID));
+
+	if(!szAuthID[0]) {
+		return 0;
+	}
+
+	new eUserData[ACCOUNT_DATA_STRUCT];
+
+	for(new i; i < g_iAccCount; i++) {
+		ArrayGetArray(g_aAccounts, i, eUserData);
+
+		if(equali(szAuthID, eUserData[ACCOUNT_DATA__AUTHID])) {
+			if(!eUserData[ACCOUNT_DATA__NAME][0]) {
+				return 0;
+			}
+
+			return set_string(arg_buffer, eUserData[ACCOUNT_DATA__NAME], get_param(arg_maxlen));
+		}
+	}
+
+	return 0;
 }
 
 /* -------------------- */
